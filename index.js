@@ -1,12 +1,8 @@
 var express = require('express');
-var logger = require('express-logger');
 var bodyParser = require('body-parser');
 var getRawBody = require('raw-body');
 var app = express();
 
-app.use(logger({
-  path: "logfile.txt"
-}));
 app.use(bodyParser.urlencoded({
   extended: false
 }));

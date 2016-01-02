@@ -1,5 +1,5 @@
 {
-  "name": "mobilealerts_server",
+  "name": "private-ma-server",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.14.2",
-    "raw-body": "^2.1.5"
+    "raw-body": "^2.1.5",
+    "express": "~4.13.3"
   }
 }
