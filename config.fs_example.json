@@ -1,0 +1,7 @@
+{
+  "loglevel": "debug",
+  "destination":"fs",
+  "options":{
+    "path":"data/"
+  }
+}

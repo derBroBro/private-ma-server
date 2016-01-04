@@ -11,6 +11,8 @@
   "dependencies": {
     "body-parser": "^1.14.2",
     "raw-body": "^2.1.5",
-    "express": "~4.13.3"
+    "express": "~4.13.3",
+    "unirest": "~0.4.2",
+    "winston": "~2.1.1"
   }
 }

@@ -1,0 +1,16 @@
+{
+  "loglevel": "debug",
+  "destination": "thingspeak",
+  "options": {
+    "devices": {
+      "022a9419ee4b": {
+        "channel": "12345",
+        "key": "THINGSPEAKWRITEKEY",
+        "fields": {
+          "temp": "1",
+          "hum": "2"
+        }
+      }
+    }
+  }
+}
