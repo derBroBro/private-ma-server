@@ -28,7 +28,7 @@ Currently the protocol is still not completely clear for me. What we can see is:
   * at the bootup (includes gateway serial number etc..) (length = 21bytes)
   * if new / cached data are available (length modulo 64 = 0)
 * the sensordata are chunked into 64 bytes long parts for each record (deviceId + timestamp)
-* each requests which also includes the gateway serial number and other data
+* each requests which also includes the gateway mac address and other data
 * each of the records is built as follow:
 
 |start|length|description

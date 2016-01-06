@@ -1,11 +1,11 @@
-logger.log("info","Loading configuration...");
+logger.log("info", "Loading configuration...");
 var config = require('./config.json');
 
-logger.log("info","Set loglevel to "+config.loglevel);
+logger.log("info", "Set loglevel to " + config.loglevel);
 logger.transports.console.level = config.loglevel;
 
 // Load required module
-logger.log("info","Load destination module ("+config.destination+")...");
+logger.log("info", "Load destination module (" + config.destination + ")...");
 var dstModule = require('./destinations/' + config.destination)(config.options);
 
 var ma = {};
@@ -13,10 +13,10 @@ var ma = {};
 ma.convertData = function(data) {
   if (data && data.length > 50) {
     var DataSets = data.length / 64;
-    logger.log("debug",DataSets + " datesets sended");
+    logger.log("debug", DataSets + " datesets sended");
 
     for (var i = 0; i < DataSets; i++) {
-      logger.log("debug","Work on set " + i+"/"+DataSets);
+      logger.log("debug", "Work on set " + i+1 + "/" + DataSets);
       var offset = i * 64;
 
       var dataObj = {};
@@ -32,10 +32,10 @@ ma.convertData = function(data) {
       dataObj.data = [];
       dataObj.debug.deviceInformation = ma.getSensorType(dataObj.deviceId);
 
-      dataObj.data = ma.getSensorValue(data,offset, dataObj.debug.deviceInformation);
+      dataObj.data = ma.getSensorValue(data, offset, dataObj.debug.deviceInformation);
 
-      logger.log("silly","Extracted data are:");
-      logger.log("silly",dataObj);
+      logger.log("silly", "Extracted data are:");
+      logger.log("silly", dataObj);
       dstModule.save(dataObj);
     }
   }
@@ -43,20 +43,29 @@ ma.convertData = function(data) {
 }
 ma.getSensorValue = function(data, offset, type) {
   var result = [];
-  for(var n = 0; n < type.sensorCount; n++){
-    var value1 = data.readUInt8(offset + 15 + (n*2)); // value1 -> 0+15+1*2 =17
-    var value2 = data.readUInt8(offset + 15 + (type.sensorCount*2+n*2)); // value2 -> 0+15+1+1*2 = 18
-    var value = (value1+value2)/2;
+  for (var n = 0; n < type.sensorCount; n++) {
+    var value1 = data.readUInt16BE(offset + 14 + (n * 2)); // value1 -> 0+15+1*2 =17
+    var value2 = data.readUInt16BE(offset + 14 + (type.sensorCount * 2 + n * 2)); // value2 -> 0+15+1+1*2 = 18
 
-    //console.log("value1: "+value1+ "| value2: "+value2 + " | = "+value);
-    if(type.sensors[n] == "temp"){
+    if (type.sensors[n] == "temp") { //12bit
+      value1 = value1 & 0x0fff;
+      //if((value1 >> 11) == 1){} // bit12 is set = *-1
+      value2 = value2 & 0x0fff;
+
+      var value = (value1 + value2) / 2;
+
       result.push({
-        value: value/10,
+        value: value / 10,
         type: type.sensors[n],
         unit: "C"
       })
     }
-    if(type.sensors[n] == "hum"){
+    if (type.sensors[n] == "hum") { //8bit
+      value1 = value1 & 0x00ff;
+      value2 = value2 & 0x00ff;
+
+      var value = (value1 + value2) / 2;
+
       result.push({
         value: value,
         type: type.sensors[n],
@@ -64,6 +73,12 @@ ma.getSensorValue = function(data, offset, type) {
       })
     }
   }
+  var battery = data.readUInt8(offset + 15 + type.sensorCount * 4 - 1);
+  result.push({
+    value: battery,
+    type: "battery",
+    unit: ""
+  });
   return result;
 }
 
