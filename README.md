@@ -40,8 +40,7 @@ Currently the protocol is still not completely clear for me. What we can see is:
 |11|1|unknown (also something about the device type?)
 |13|1|consecutive number (deviceId)
 |.|.|
-|14+n|1|unknown
-|15+n|1|value (temperature: shift by one decimal place, humidity: normal)
+|14+n|2|first 4 bits unknown last 8bit for temperature, last 12 for temperature
 |.|.|
 |63|1|Checksum(?)
 

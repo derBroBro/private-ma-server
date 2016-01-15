@@ -1,6 +1,6 @@
 {
   "loglevel": "debug",
-  "destination": "thingspeak",
+  "module": "thingspeak",
   "options": {
     "devices": {
       "022a9419ee4b": {

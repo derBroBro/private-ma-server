@@ -1,6 +1,6 @@
 {
   "loglevel": "debug",
-  "module":"fs",
+  "module":"simple_rest",
   "options":{
     "path":"data/"
   }
