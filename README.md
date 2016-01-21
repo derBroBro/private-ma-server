@@ -9,7 +9,6 @@ The data could be written to JSON files or send to thingspeak.com. The Filesyste
 # What is not supported but planned?
 The long term target would be to fully understand the protocol and to create connectors to different locations (database etc.).
 
-*For example it is clear how normaly/partial the sensor values are encoded. Sadly this is for the temperature only one byte which are then shift by one decimal place. This results in a value from 0 (=0.0°C) to 255 (=25.5°C).*
 
 # How to start
 __NOTE BEFORE!__
@@ -35,16 +34,20 @@ Currently the protocol is still not completely clear for me. What we can see is:
 |---|---|---
 |0|1|unknown (device type?)
 |1|4|Unix Timestamp
-|5|1|length / sensor values (2bytes for each value / ?)
+|5|1|unknown (length? but sometimes unknown sensor values are added)
 |6|6|device id
 |11|1|unknown (also something about the device type?)
 |13|1|consecutive number (deviceId)
 |.|.|
-|14+n|2|first 4 bits unknown last 8bit for temperature, last 12 for temperature
+|14+n|2|first 4 bits unknown, next 2 datatype(?) last 8bit for humidity, last 12 for temperature
 |.|.|
+|x|1|battery?
 |63|1|Checksum(?)
 
-The device type is related to the ID. 02 means temperature only, 03 temperature and humidity. Other devices and their values must be investigated.
+The device type is related to the ID. 02 means temperature only (MA10100), 03 temperature and humidity (MA10200). Other devices and their values must be investigated.
+Interesting are that the byte 0,5 and 6 look like some kind of device specific.
+MA10100: byte1 = ce, byte5 = 12, byte6 = 02
+MA10200: byte1 = d2, byte5 = 16, byte6 = a3
 I am not sure but is think there must be also a "battery" flag.
 
 # How can I support?

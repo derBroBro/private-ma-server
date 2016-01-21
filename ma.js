@@ -50,6 +50,34 @@ ma.getSensorValue = function(data, offset, type) {
     var value1 = data.readUInt16BE(offset + 14 + (n * 2)); // value1 -> 0+15+1*2 =17
     var value2 = data.readUInt16BE(offset + 14 + (type.sensorCount * 2 + n * 2)); // value2 -> 0+15+1+1*2 = 18
 
+    var value = 0;
+    // debug
+    var datatype = (value1 & 0x0c00) >> 10; // bit 5+6
+    switch (datatype) {
+      case 0: // 10 bit positive, 1 point comma
+        value1 = value1 & 0x03ff;
+        value2 = value2 & 0x03ff;
+        var avgValue = (value1+value2) / 2;
+        value = avgValue/10;
+        break;
+      case 1: // 4 bit, negative, 1 point comma
+        value1 = (value1 & 0x03ff)^0x03ff;
+        value2 = (value2 & 0x03ff)^0x03ff;
+        var avgValue = (value1+value2) / 2;
+        value = avgValue/10*-1;
+        break;
+      case 2: // 10bit postive
+        value1 = value1 & 0x03ff;
+        value2 = value2 & 0x03ff;
+        var avgValue = (value1+value2) / 2;
+        value = avgValue;
+        break;
+      default:
+
+    }
+
+    logger.log("debug","type: "+datatype+" - value: "+value);
+
     switch (type.sensors[n]) {
       case "temp": //12bit
         value1 = value1 & 0x0fff; //if((value1 >> 11) == 1){} // bit12 is set = *-1

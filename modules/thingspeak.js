@@ -38,8 +38,7 @@ module.exports = function(options) {
           if (response.body == "0") {
             logger.log("warn", "Server rejected data!");
           } else {
-            logger.log("debug", "Data stored with id "
-              response.body);
+            logger.log("debug", "Data stored with id "+ response.body);
           }
         });
     } else {
