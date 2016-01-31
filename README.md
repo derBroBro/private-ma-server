@@ -39,10 +39,31 @@ Currently the protocol is still not completely clear for me. What we can see is:
 |11|1|unknown (also something about the device type?)
 |13|1|consecutive number (deviceId)
 |.|.|
-|14+n|2|first 4 bits unknown, next 2 datatype(?) last 8bit for humidity, last 12 for temperature
+|14+n|2|first 4 bits unknown, next 2 datatype(?) for type=00 (last 8bit for humidity) type=01 (last 12 for temperature, xor *-1, moved by one comma) type=10 (last 12bits moved by one comma)
 |.|.|
 |x|1|battery?
 |63|1|Checksum(?)
+
+Startup Request Record:
+|start|length|description
+|---|---|---
+|0|1| unknown (always 0x13)
+|1|4| unixTime
+|4|6| mac
+|10|8| unknown (zeros)
+
+Startup Responce Record:
+|start|length|description
+|---|---|---
+|0|2| unknown (zeros)
+|2|2| unknown (01 a4 )
+|2|4| unknown (zeros)
+|8|4| unixTime
+|12|4| unknown (zeros)
+|16|4| unknown (17 61 d4 80)
+|20|2| unknown (zeros)
+|22|2| unknown (00 0f)
+
 
 The device type is related to the ID. 02 means temperature only (MA10100), 03 temperature and humidity (MA10200). Other devices and their values must be investigated.
 Interesting are that the byte 0,5 and 6 look like some kind of device specific.

@@ -19,13 +19,15 @@ module.exports = function(options) {
       var urlParts = [];
       urlParts.push("https://api.thingspeak.com/update?api_key=" + parameters.key);
       urlParts.push("created_at=" + datetime_formated);
+
       // and add the field for each falie
-      for (var i = 0; i < data.data.length; i++) {
-        var curData = data.data[i];
-        if (parameters.fields[curData.type]) {
-          urlParts.push("field" + parameters.fields[curData.type] + "=" + curData.value)
+      var sensors = data.deviceInformation.sensors;
+      for (var i = 0; i < sensors.length; i++) {
+        var curSensor = sensors[i];
+        if (parameters.fields[curSensor]) {
+          urlParts.push("field" + parameters.fields[curSensor] + "=" + data.data[curSensor].value);
         } else {
-          logger.log("warn", "No data for " + deviceId + "/" + curData.type + " found!");
+          logger.log("warn", "No data for " + data.deviceId + "/" + curSensor + " found!");
         }
       }
       // glue them together

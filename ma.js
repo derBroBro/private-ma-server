@@ -29,11 +29,14 @@ ma.convertData = function(data) {
       dataObj.debug.length = parseInt(data.toString("hex", offset + 5, offset + 6));
       //dataObj.debug.items = (dataObj.debug.length - 6 - 1 - 1) / 2; //6b sn 1b NA 1b LF,  2b per item
       dataObj.deviceId = data.toString("hex", offset + 6, offset + 12);
-      dataObj.debug.type3 = data.toString("hex", offset + 12, offset + 13);
+      dataObj.debug.type2 = data.toString("hex", offset + 12, offset + 13);
       dataObj.debug.nr = data.readUInt8(offset + 13);
-      dataObj.debug.deviceInformation = ma.getSensorType(dataObj.deviceId);
+      dataObj.deviceInformation = ma.getSensorType(dataObj.deviceId);
 
-      dataObj.data = ma.getSensorValue(data, offset, dataObj.debug.deviceInformation);
+      var lastValueOffset = offset + 15 + dataObj.deviceInformation.sensors.length * 4 - 1;
+      dataObj.debug.type3 =data.toString("hex",lastValueOffset,lastValueOffset+1);
+
+      dataObj.data = ma.getSensorValue(data, offset, dataObj.deviceInformation);
 
       logger.log("silly", "Extracted data are:");
       logger.log("silly", dataObj);
@@ -41,6 +44,7 @@ ma.convertData = function(data) {
     }
   } else {
     logger.log("info", "Got bootup message...");
+    logger.log("info", "Ignoreing...");
   }
 
 }
@@ -67,8 +71,8 @@ ma.getSensorValue = function(data, offset, type) {
         value = avgValue/10*-1;
         break;
       case 2: // 10bit postive
-        value1 = value1 & 0x03ff;
-        value2 = value2 & 0x03ff;
+        value1 = value1 & 0x00ff;
+        value2 = value2 & 0x00ff;
         var avgValue = (value1+value2) / 2;
         value = avgValue;
         break;
@@ -79,35 +83,30 @@ ma.getSensorValue = function(data, offset, type) {
     logger.log("debug","type: "+datatype+" - value: "+value);
 
     switch (type.sensors[n]) {
-      case "temp": //12bit
-        value1 = value1 & 0x0fff; //if((value1 >> 11) == 1){} // bit12 is set = *-1
-        value2 = value2 & 0x0fff;
-        var value = (value1 + value2) / 2; // avg
+      case "temp":
         result["temp"] = {
-          value: value / 10, // move comma
+          value: value, // move comma
           type: type.sensors[n],
           unit: "C"
         };
         break;
-      case "hum": //8bit
-        value1 = value1 & 0x00ff;
-        value2 = value2 & 0x00ff;
-        var value = (value1 + value2) / 2; // avg
+      case "hum":
         result["hum"] = {
           value: value,
           type: type.sensors[n],
           unit: "%"
         };
         break;
-
     }
   }
+  /*
   var battery = data.readUInt8(offset + 15 + type.sensorCount * 4 - 1);
   result["battery"] = {
     value: battery,
     type: "battery",
     unit: ""
   };
+  */
   return result;
 }
 
@@ -140,9 +139,18 @@ ma.register = function(app) {
     logger.log("debug", "Got request for /gateway/put");
     logger.log("silly", req.headers);
 
+    var headerData = req.headers.http_identify.split(":");
+    var gatewayInfo = {};
+    gatewayInfo.sn = headerData[0];
+    gatewayInfo.mac = headerData[1];
+    gatewayInfo.field1 = headerData[2];
+    logger.log("silly", gatewayInfo);
+
     getRawBody(req, {
       length: req.headers['content-length']
     }, function(err, string) {
+      logger.log("silly", string.toString("hex"));
+      logger.log("silly", err);
       ma.convertData(string);
       res.sendStatus(200)
     });
