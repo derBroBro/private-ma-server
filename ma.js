@@ -11,40 +11,42 @@ logger.log("info", "Load module '" + config.module + "'");
 var dstModule = require('./modules/' + config.module)(config.options);
 
 var ma = {};
+ma.processBootup = function(data) {
+  logger.log("info", "Got bootup message...");
+  logger.log("info", "Ignoreing...");
 
-ma.convertData = function(data) {
-  if (data && data.length > 50) {
-    var DataSets = data.length / 64;
-    logger.log("debug", DataSets + " datesets sended");
+  res.sendStatus(200);
+}
+ma.processSensorData = function(data) {
+  var DataSets = data.length / 64;
+  logger.log("debug", DataSets + " datesets sended");
 
-    for (var i = 0; i < DataSets; i++) {
-      logger.log("debug", "Work on set " + (i + 1) + "/" + DataSets);
-      var offset = i * 64;
+  for (var i = 0; i < DataSets; i++) {
+    logger.log("debug", "Work on set " + (i + 1) + "/" + DataSets);
+    var offset = i * 64;
 
-      var dataObj = {};
-      dataObj.debug = {};
-      dataObj.debug.line = data.toString("hex", offset, offset + 64);
-      dataObj.debug.type1 = data.toString("hex", offset, offset + 1);
-      dataObj.unixTime = data.readInt32BE(offset + 1);
-      dataObj.debug.length = parseInt(data.toString("hex", offset + 5, offset + 6));
-      //dataObj.debug.items = (dataObj.debug.length - 6 - 1 - 1) / 2; //6b sn 1b NA 1b LF,  2b per item
-      dataObj.deviceId = data.toString("hex", offset + 6, offset + 12);
-      dataObj.debug.type2 = data.toString("hex", offset + 12, offset + 13);
-      dataObj.debug.nr = data.readUInt8(offset + 13);
-      dataObj.deviceInformation = ma.getSensorType(dataObj.deviceId);
+    var dataObj = {};
+    dataObj.debug = {};
+    dataObj.debug.line = data.toString("hex", offset, offset + 64);
+    dataObj.debug.type1 = data.toString("hex", offset, offset + 1);
+    dataObj.unixTime = data.readInt32BE(offset + 1);
+    dataObj.debug.length = parseInt(data.toString("hex", offset + 5, offset + 6));
+    //dataObj.debug.items = (dataObj.debug.length - 6 - 1 - 1) / 2; //6b sn 1b NA 1b LF,  2b per item
+    dataObj.deviceId = data.toString("hex", offset + 6, offset + 12);
+    dataObj.debug.type2 = data.toString("hex", offset + 12, offset + 13);
+    dataObj.debug.nr = data.readUInt8(offset + 13);
+    dataObj.deviceInformation = ma.getSensorType(dataObj.deviceId);
 
-      var lastValueOffset = offset + 15 + dataObj.deviceInformation.sensors.length * 4 - 1;
-      dataObj.debug.type3 =data.toString("hex",lastValueOffset,lastValueOffset+1);
+    var lastValueOffset = offset + 15 + dataObj.deviceInformation.sensors.length * 4 - 1;
+    dataObj.debug.type3 = data.toString("hex", lastValueOffset, lastValueOffset + 1);
 
-      dataObj.data = ma.getSensorValue(data, offset, dataObj.deviceInformation);
+    dataObj.data = ma.getSensorValue(data, offset, dataObj.deviceInformation);
 
-      logger.log("silly", "Extracted data are:");
-      logger.log("silly", dataObj);
-      dstModule.save(dataObj);
-    }
-  } else {
-    logger.log("info", "Got bootup message...");
-    logger.log("info", "Ignoreing...");
+    logger.log("silly", "Extracted data are:");
+    logger.log("silly", dataObj);
+    dstModule.save(dataObj);
+
+    res.sendStatus(200);
   }
 
 }
@@ -61,26 +63,26 @@ ma.getSensorValue = function(data, offset, type) {
       case 0: // 10 bit positive, 1 point comma
         value1 = value1 & 0x03ff;
         value2 = value2 & 0x03ff;
-        var avgValue = (value1+value2) / 2;
-        value = avgValue/10;
+        var avgValue = (value1 + value2) / 2;
+        value = avgValue / 10;
         break;
       case 1: // 4 bit, negative, 1 point comma
-        value1 = (value1 & 0x03ff)^0x03ff;
-        value2 = (value2 & 0x03ff)^0x03ff;
-        var avgValue = (value1+value2) / 2;
-        value = avgValue/10*-1;
+        value1 = (value1 & 0x03ff) ^ 0x03ff;
+        value2 = (value2 & 0x03ff) ^ 0x03ff;
+        var avgValue = (value1 + value2) / 2;
+        value = avgValue / 10 * -1;
         break;
       case 2: // 10bit postive
         value1 = value1 & 0x00ff;
         value2 = value2 & 0x00ff;
-        var avgValue = (value1+value2) / 2;
+        var avgValue = (value1 + value2) / 2;
         value = avgValue;
         break;
       default:
 
     }
 
-    logger.log("debug","type: "+datatype+" - value: "+value);
+    logger.log("debug", "type: " + datatype + " - value: " + value);
 
     switch (type.sensors[n]) {
       case "temp":
@@ -142,13 +144,21 @@ ma.register = function(app) {
     gatewayInfo = ma.identify(req);
     logger.log("silly", gatewayInfo);
 
+    // load body
     getRawBody(req, {
       length: req.headers['content-length']
     }, function(err, string) {
       logger.log("silly", string.toString("hex"));
       logger.log("silly", err);
-      ma.convertData(string);
-      res.sendStatus(200)
+      switch (gatewayInfo.field1) {
+        case "CO":
+          ma.processSensorData(string);
+          break;
+
+        case "00":
+          ma.processBootup(string);
+          break;
+      }
     });
   });
 
@@ -157,7 +167,7 @@ ma.register = function(app) {
 }
 
 // Get the header Data
-ma.identify = function(req){
+ma.identify = function(req) {
   var headerData = req.headers.http_identify.split(":");
   var gatewayInfo = {};
   gatewayInfo.sn = headerData[0];
