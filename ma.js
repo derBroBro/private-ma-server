@@ -11,13 +11,30 @@ logger.log("info", "Load module '" + config.module + "'");
 var dstModule = require('./modules/' + config.module)(config.options);
 
 var ma = {};
-ma.processBootup = function(data) {
-  logger.log("info", "Got bootup message...");
-  logger.log("info", "Ignoreing...");
 
-  res.sendStatus(200);
+// handle bootups
+ma.processBootup = function(data,res,gatewayInfo) {
+  logger.log("info", "Got bootup message...");
+
+  var time = Math.floor(Date.now() / 1000);
+
+  var buf = new Buffer(24);
+  var preBuf = new Buffer([0x00,0x00,0x01,0xa4,0x00,0x00,0x00,0x00]) // prefix
+  var postBuf = new Buffer([0x00,0x00,0x00,0x00,0x17,0x61,0xd4,0x80,0x00,0x00,0x00,0x0f]) // postfix
+
+  preBuf.copy(buf);
+  buf.writeUInt32BE(time, 8, 4); // time
+  postBuf.copy(buf,12);
+
+  logger.log("info", "Send datetime...");
+  logger.log("silly", buf.toString("hex"));
+
+  res.setHeader('content-type', 'application/octet-stream');
+  res.status(200)
+  res.end(buf);
 }
-ma.processSensorData = function(data) {
+
+ma.processSensorData = function(data,res,gatewayInfo) {
   var DataSets = data.length / 64;
   logger.log("debug", DataSets + " datesets sended");
 
@@ -157,17 +174,21 @@ ma.register = function(app) {
     // load body
     getRawBody(req, {
       length: req.headers['content-length']
-    }, function(err, string) {
-      logger.log("silly", string.toString("hex"));
+    }, function(err, buf) {
+      logger.log("silly", buf.toString("hex"));
       logger.log("silly", err);
       switch (gatewayInfo.field1) {
-        case "CO":
-          ma.processSensorData(string);
+        case "C0":
+          ma.processSensorData(buf,res,gatewayInfo);
           break;
 
         case "00":
-          ma.processBootup(string);
+          ma.processBootup(buf,res,gatewayInfo);
           break;
+
+        default:
+          logger.log("warn", "Unknown message type '" + gatewayInfo.field1 + "' received!");
+          logger.log("warn", "Please report type '" + gatewayInfo.field1 + "' at github!");
       }
     });
   });

@@ -35,6 +35,7 @@ module.exports = function(options) {
 
       logger.log("debug", "Request URL is: " + requestUrl);
       logger.log("debug", "Send request to thingspeak...");
+      
       unirest.post(requestUrl).send()
         .end(function(response) {
           if (response.body == "0") {
