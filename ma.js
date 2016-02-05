@@ -56,33 +56,7 @@ ma.getSensorValue = function(data, offset, type) {
     var value1 = data.readUInt16BE(offset + 14 + (n * 2)); // value1 -> 0+15+1*2 =17
     var value2 = data.readUInt16BE(offset + 14 + (type.sensorCount * 2 + n * 2)); // value2 -> 0+15+1+1*2 = 18
 
-    var value = 0;
-    // debug
-    var datatype = (value1 & 0x0c00) >> 10; // bit 5+6
-    switch (datatype) {
-      case 0: // 10 bit positive, 1 point comma
-        value1 = value1 & 0x03ff;
-        value2 = value2 & 0x03ff;
-        var avgValue = (value1 + value2) / 2;
-        value = avgValue / 10;
-        break;
-      case 1: // 4 bit, negative, 1 point comma
-        value1 = (value1 & 0x03ff) ^ 0x03ff;
-        value2 = (value2 & 0x03ff) ^ 0x03ff;
-        var avgValue = (value1 + value2) / 2;
-        value = avgValue / 10 * -1;
-        break;
-      case 2: // 10bit postive
-        value1 = value1 & 0x00ff;
-        value2 = value2 & 0x00ff;
-        var avgValue = (value1 + value2) / 2;
-        value = avgValue;
-        break;
-      default:
-
-    }
-
-    logger.log("debug", "type: " + datatype + " - value: " + value);
+    var value = ma.conertValues(value1, value2);
 
     switch (type.sensors[n]) {
       case "temp":
@@ -112,6 +86,39 @@ ma.getSensorValue = function(data, offset, type) {
   return result;
 }
 
+// there are multiple value types which are corrected by this function
+ma.conertValues = function(value1, value2) {
+
+  var value = 0;
+  // debug
+  var datatype = (value1 & 0x0c00) >> 10; // bit 5+6
+  switch (datatype) {
+    case 0: // 10 bit positive, 1 point comma
+      value1 = value1 & 0x03ff;
+      value2 = value2 & 0x03ff;
+      var avgValue = (value1 + value2) / 2;
+      value = avgValue / 10;
+      break;
+    case 1: // 4 bit, negative, 1 point comma
+      value1 = (value1 & 0x03ff) ^ 0x03ff;
+      value2 = (value2 & 0x03ff) ^ 0x03ff;
+      var avgValue = (value1 + value2) / 2;
+      value = avgValue / 10 * -1;
+      break;
+    case 2: // 10bit postive
+      value1 = value1 & 0x00ff;
+      value2 = value2 & 0x00ff;
+      var avgValue = (value1 + value2) / 2;
+      value = avgValue;
+      break;
+    default:
+
+  }
+
+  logger.log("debug", "type: " + datatype + " - value: " + value);
+  return value;
+}
+
 ma.getSensorType = function(deviceId) {
   var typeId = deviceId.substring(0, 2);
   var typeInformation = {};
@@ -130,11 +137,14 @@ ma.getSensorType = function(deviceId) {
       break;
     default:
       logger.log("debug", "Device with type='" + typeId + "' are currently not supported.");
+      logger.log("debug", "Pleas reporting the type '" + typeId + "' with at github! :-).");
   }
 
   typeInformation.sensorCount = typeInformation.sensors.length;
   return typeInformation;
 }
+
+// Register and and execute routes
 ma.register = function(app) {
   logger.log("debug", "Register route /gateway/put");
   app.put('/gateway/put', function(req, res) {
