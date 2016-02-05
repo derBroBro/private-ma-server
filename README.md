@@ -26,9 +26,13 @@ Currently the protocol is still not completely clear for me. What we can see is:
 * the gateway calls the proxy server at /gateway/put (HTTP) at two points
   * at the bootup (includes gateway serial number etc..) (length = 21bytes)
   * if new / cached data are available (length modulo 64 = 0)
-* the sensordata are chunked into 64 bytes long parts for each record (deviceId + timestamp)
-* each requests which also includes the gateway mac address and other data
-* each of the records is built as follow:
+* Each reguest includes an header (http_identify) with the serial number, the mac and an unknown value (maybe request type). All three values are in ascii and devided by ":".
+  * If the thrird values is the type then "C0" are data and "00" the bootup.
+
+## Data records
+* The sensordata are chunked into 64 bytes long parts for each record (deviceId + timestamp)
+* Each requests which also includes the gateway mac address and other data
+* Each of the records is built as follow:
 
 |start|length|description
 |---|---|---
@@ -43,6 +47,15 @@ Currently the protocol is still not completely clear for me. What we can see is:
 |.|.|
 |x|1|battery?
 |63|1|Checksum(?)
+
+The device type is related to the ID. 02 means temperature only (MA10100), 03 temperature and humidity (MA10200). Other devices and their values must be investigated.
+Interesting are that the byte 0,5 and 6 look like some kind of device specific.
+MA10100: byte1 = ce, byte5 = 12, byte6 = 02
+MA10200: byte1 = d2, byte5 = 16, byte6 = a3
+I am not sure but is think there must be also a "battery" flag.
+
+## Bootup Message
+It looks like the bootup message tries to get the current time.
 
 Startup Request Record:
 
@@ -65,13 +78,6 @@ Startup Responce Record:
 |16|4| unknown (17 61 d4 80)
 |20|2| unknown (zeros)
 |22|2| unknown (00 0f)
-
-
-The device type is related to the ID. 02 means temperature only (MA10100), 03 temperature and humidity (MA10200). Other devices and their values must be investigated.
-Interesting are that the byte 0,5 and 6 look like some kind of device specific.
-MA10100: byte1 = ce, byte5 = 12, byte6 = 02
-MA10200: byte1 = d2, byte5 = 16, byte6 = a3
-I am not sure but is think there must be also a "battery" flag.
 
 # How can I support?
 You can work on the code as well as provide information about you sensor data to help to understand how them work.
