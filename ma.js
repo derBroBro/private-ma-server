@@ -139,11 +139,7 @@ ma.register = function(app) {
     logger.log("debug", "Got request for /gateway/put");
     logger.log("silly", req.headers);
 
-    var headerData = req.headers.http_identify.split(":");
-    var gatewayInfo = {};
-    gatewayInfo.sn = headerData[0];
-    gatewayInfo.mac = headerData[1];
-    gatewayInfo.field1 = headerData[2];
+    gatewayInfo = ma.identify(req);
     logger.log("silly", gatewayInfo);
 
     getRawBody(req, {
@@ -158,6 +154,17 @@ ma.register = function(app) {
 
   logger.log("debug", "Register Module routes...");
   dstModule.register(app);
+}
+
+// Get the header Data
+ma.identify = function(req){
+  var headerData = req.headers.http_identify.split(":");
+  var gatewayInfo = {};
+  gatewayInfo.sn = headerData[0];
+  gatewayInfo.mac = headerData[1];
+  gatewayInfo.field1 = headerData[2];
+
+  return gatewayInfo;
 }
 
 module.exports = ma;
