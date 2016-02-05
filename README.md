@@ -45,6 +45,7 @@ Currently the protocol is still not completely clear for me. What we can see is:
 |63|1|Checksum(?)
 
 Startup Request Record:
+
 |start|length|description
 |---|---|---
 |0|1| unknown (always 0x13)
@@ -53,6 +54,7 @@ Startup Request Record:
 |10|8| unknown (zeros)
 
 Startup Responce Record:
+
 |start|length|description
 |---|---|---
 |0|2| unknown (zeros)
