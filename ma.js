@@ -62,10 +62,8 @@ ma.processSensorData = function(data,res,gatewayInfo) {
     logger.log("silly", "Extracted data are:");
     logger.log("silly", dataObj);
     dstModule.save(dataObj);
-
-    res.sendStatus(200);
   }
-
+  res.sendStatus(200);
 }
 ma.getSensorValue = function(data, offset, type) {
   var result = {};
