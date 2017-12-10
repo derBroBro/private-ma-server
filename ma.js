@@ -72,23 +72,19 @@ ma.getSensorValue = function(data, offset, type) {
     var value2 = data.readUInt16BE(offset + 14 + (type.sensorCount * 2 + n * 2)); // value2 -> 0+15+1+1*2 = 18
 
     var value = ma.conertValues(value1, value2);
+	var unit = "";
+	
+	if (type.sensors[n][0] == "temp") {
+		unit = "C";
+	} else if (type.sensors[n][0] == "hum") {
+		unit = "%";
+	}
 
-    switch (type.sensors[n]) {
-      case "temp":
-        result["temp"] = {
-          value: value, // move comma
-          type: type.sensors[n],
-          unit: "C"
-        };
-        break;
-      case "hum":
-        result["hum"] = {
-          value: value,
-          type: type.sensors[n],
-          unit: "%"
-        };
-        break;
-    }
+	result[type.sensors[n][1]] = {
+		value: value,
+		type: type.sensors[n][0],
+		unit: unit
+	};	
   }
   /*
   var battery = data.readUInt8(offset + 15 + type.sensorCount * 4 - 1);
@@ -142,14 +138,23 @@ ma.getSensorType = function(deviceId) {
   switch (typeId) {
     case "02":
       typeInformation.name = "temperature only";
-      typeInformation.sensors.push("temp");
+      typeInformation.sensors.push(["temp","temp"]);
       break;
 
     case "03":
       typeInformation.name = "temperature and humity";
-      typeInformation.sensors.push("temp");
-      typeInformation.sensors.push("hum");
+      typeInformation.sensors.push(["temp","temp"]);
+      typeInformation.sensors.push(["hum","hum"]);
       break;
+	  
+   case "07":
+      typeInformation.name = "temperature and humity, inside and outside";
+      typeInformation.sensors.push(["temp","tempIn"]);
+      typeInformation.sensors.push(["hum","humIn"]);
+      typeInformation.sensors.push(["temp","tempOut"]);
+      typeInformation.sensors.push(["hum","humOut"]);	  
+      break;	  
+	  
     default:
       logger.log("debug", "Device with type='" + typeId + "' are currently not supported.");
       logger.log("debug", "Pleas reporting the type '" + typeId + "' with at github! :-).");
